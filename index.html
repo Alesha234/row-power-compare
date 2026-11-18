@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Row Power Compare</title>
+<meta name="description" content="Compare 480 V AC, 415 V AC and 800 V DC for one row of AI racks: wire, breaker, copper, losses and 10-year cost, sized to the 2023 NEC. Free beta.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Bench instrument with a blueprint feel: controls left, readouts right, a faint drafting grid behind. */
+/* One look, both modes: blueprint paper and drafting grid, with the bench instrument's condensed headings,
+   instrument readouts and copper accent. Blueprint blue marks structure; copper marks what matters. */
+:root {
+  --bg: #e8f0f8; --grid: rgba(33, 95, 196, 0.10); --grid-major: rgba(33, 95, 196, 0.18); --panel: #fbfdff; --panel-2: #eef4fb;
+  --fg: #0f2340; --muted: #4f6582; --line: #c9d8ea; --blue: #215fc4; --accent: #b0531c; --accent-ink: #ffffff;
+  --win: #1d7f47; --win-bg: #e3f3e9; --warn: #c12b2b; --warn-bg: #fbe5e5; --focus: #215fc4;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1a2e; --grid: rgba(127, 211, 255, 0.06); --grid-major: rgba(127, 211, 255, 0.11); --panel: #12233b; --panel-2: #172b47;
+    --fg: #e8f0f9; --muted: #9fb3cc; --line: #25416a; --blue: #7fd3ff; --accent: #f0975c; --accent-ink: #0d1a2e;
+    --win: #5cf2b5; --win-bg: #123d37; --warn: #ff8a7a; --warn-bg: #3d1d22; --focus: #7fd3ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1a2e; --grid: rgba(127, 211, 255, 0.06); --grid-major: rgba(127, 211, 255, 0.11); --panel: #12233b; --panel-2: #172b47;
+  --fg: #e8f0f9; --muted: #9fb3cc; --line: #25416a; --blue: #7fd3ff; --accent: #f0975c; --accent-ink: #0d1a2e;
+  --win: #5cf2b5; --win-bg: #123d37; --warn: #ff8a7a; --warn-bg: #3d1d22; --focus: #7fd3ff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background-color: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body);
+  background-image: linear-gradient(var(--grid-major) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 140px 140px, 140px 140px, 28px 28px, 28px 28px;
+  padding: 24px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left));
+}
+.wrap { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1; text-transform: uppercase; }
+h1 b { color: var(--accent); }
+.lede { color: var(--muted); margin: 6px 0 0; max-width: 70ch; }
+.beta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--accent); color: var(--accent); border-radius: 99px; padding: 2px 9px; vertical-align: middle; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--blue); border-radius: 10px; padding: 16px; }
+.grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.field { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.field label { font-size: 13.5px; }
+.field small { display: block; color: var(--muted); font-size: 11.5px; }
+input, select { font: 600 14px var(--font-mono); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; width: 100%; min-height: 40px; }
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 10px 0 4px; }
+.seg button { flex: 1; min-height: 40px; border: 0; background: var(--panel-2); color: var(--fg); font: 600 13px var(--font-body); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.check { display: flex; gap: 8px; align-items: center; padding: 8px 0; font-size: 13.5px; }
+.check input { width: 20px; min-height: 20px; }
+details { margin-top: 10px; }
+summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .cards { grid-template-columns: 1fr; } }
+.card { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.card.win { border: 2px solid var(--win); border-top-width: 3px; }
+.card h3 { font-size: 26px; text-transform: uppercase; }
+.badge { align-self: flex-start; background: var(--win-bg); color: var(--win); font-weight: 600; font-size: 12px; border-radius: 99px; padding: 3px 10px; }
+.big { font: 600 26px var(--font-mono); margin: 2px 0 6px; }
+.row { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+.row b { font-family: var(--font-mono); font-weight: 600; text-align: right; }
+.row.bad b, .row.bad span { color: var(--warn); }
+.alert { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; margin-top: 6px; }
+.why { border-left: 4px solid var(--win); background: var(--panel); border-radius: 8px; padding: 10px 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: 600 13.5px var(--font-body); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.note { color: var(--muted); font-size: 12.5px; }
+.status { min-height: 1.4em; font-size: 13px; color: var(--win); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue); }
+.saved li { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.saved ul { list-style: none; padding: 0; margin: 6px 0 0; }
+.disc { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 12px; }
+.broken { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); border-radius: 12px; padding: 16px; }
+.theme { min-height: 40px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Free beta · NEC 2023 · Decision support</div>
+      <h1>Row Power <b>Compare</b></h1>
+      <p class="lede">Compare 480 V AC, 415 V AC and 800 V DC for one row of AI racks: wire, breaker, copper, losses and the cost of those losses over time, sized to the 2023 National Electrical Code.</p>
+    </div>
+    <div class="actions">
+      <button class="btn theme" id="theme" type="button" aria-label="Switch light or dark">Light / dark</button>
+    </div>
+  </header>
+
+  <div id="broken" class="broken" hidden></div>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="inputs-title">
+      <h2 id="inputs-title" class="eyebrow">Your row</h2>
+      <div class="seg" role="group" aria-label="How the row is fed">
+        <button type="button" data-topology="rack" aria-pressed="true">A run per rack</button>
+        <button type="button" data-topology="row" aria-pressed="false">One shared row feeder</button>
+      </div>
+      <div id="fields"></div>
+      <label class="check"><input type="checkbox" id="neutral" checked> AC options carry a full-size neutral</label>
+      <details>
+        <summary>Conversion efficiencies</summary>
+        <div id="effs"></div>
+        <label class="check"><input type="checkbox" id="ecoUPS"> UPS in high-efficiency (eco) mode</label>
+        <p class="note">Typical published figures, not measurements of any product. The 800 V DC rack converter figure is not yet confirmed.</p>
+      </details>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div id="cards" class="cards" aria-live="polite"></div>
+      <div id="why" class="why"></div>
+      <section class="panel">
+        <div class="eyebrow">Whole hall</div>
+        <div id="hall"></div>
+      </section>
+      <div class="actions">
+        <button class="btn primary" id="copy" type="button">Copy link to this comparison</button>
+        <button class="btn" id="save" type="button">Save on this device</button>
+        <a class="btn" id="off" target="_blank" rel="noopener" hidden>Something looks off?</a>
+        <a class="btn" id="check" target="_blank" rel="noopener" hidden>Request a 15-minute check</a>
+      </div>
+      <p class="status" id="status" role="status"></p>
+      <section class="panel saved" id="savedBox" hidden>
+        <div class="eyebrow">Saved on this device</div>
+        <ul id="saved"></ul>
+      </section>
+      <details class="panel">
+        <summary>Assumptions and sources</summary>
+        <table>
+          <thead><tr><th>What</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td>Size at 125% of continuous load</td><td>NEC 215.2(A)(1)</td></tr>
+            <tr><td>Wire ampacity (75 °C column), checked against the 90 °C rating after ambient correction</td><td>NEC Table 310.16, Table 310.15(B)(1)(1)</td></tr>
+            <tr><td>Breaker: next standard rating</td><td>NEC 240.6(A)</td></tr>
+            <tr><td>Above 500 kcmil, parallel sets</td><td>NEC 310.10(G)</td></tr>
+            <tr><td>Grounding conductor, per set</td><td>NEC Table 250.122</td></tr>
+            <tr><td>Resistance at 75 °C and conductor area</td><td>NEC Chapter 9, Table 8</td></tr>
+            <tr><td>Voltage drop 3% feeder / 5% total</td><td>Guidance from NEC Informational Notes, not a code limit</td></tr>
+            <tr><td>Wire heat = current² × resistance, on current-carrying wires, at average load</td><td>Ohm's law; your average load</td></tr>
+            <tr><td>Cooling for waste heat = (PUE − 1) × heat</td><td>Your PUE input</td></tr>
+            <tr><td>Copper 8.89 g/cm³, aluminum 2.70 g/cm³</td><td>Standard handbook densities</td></tr>
+            <tr><td>Simplifications: all loads continuous; DC resistance, no reactance or skin effect; one run or set per raceway, at most 3 current-carrying wires, neutral not counted; both AC options share one conversion chain; busway sized by rating only</td><td>Listed so nobody mistakes them for code requirements</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <p class="disc">Decision support for early design comparison, not a stamped design. Final construction documents need review and seal by a licensed professional engineer.</p>
+    </div>
+  </div>
+</div>
+
+<script src="calc.js"></script>
+<script>
+(function () {
+  "use strict";
+  // Where "Something looks off?" and "Request a 15-minute check" go. Empty hides both buttons.
+  var LINKEDIN_URL = "https://www.linkedin.com/in/aleshabuckins/";
+  var R = window.RowPower;
+  var D = R.DEFAULTS;
+  var FIELDS = [
+    ["hallMW", "Hall IT load", "MW", 1, 0.1, 2000],
+    ["rackKW", "Rack load", "kW", 1, 1, 1000],
+    ["racksPerRow", "Racks per row", "", 1, 1, 100],
+    ["runFt", "Run length (one way)", "ft", 1, 1, 3000],
+    ["avgLoad", "Average load", "%", 100, 1, 100],
+    ["pf", "Power factor (AC)", "", 1, 0.5, 1],
+    ["ambientC", "Ambient temperature", "°C", 1, 0, 85],
+    ["priceKWh", "Electricity price", "$/kWh", 1, 0, 2],
+    ["pue", "PUE", "", 1, 1, 3],
+    ["years", "Years", "", 1, 1, 40],
+    ["cuPerKg", "Copper metal price", "$/kg", 1, 0, 200],
+    ["alPerKg", "Aluminum metal price", "$/kg", 1, 0, 200, "0 hides metal cost for aluminum"]
+  ];
+  var EFFS = [["effMV", "Medium-voltage transformer"], ["effUPS", "UPS (double conversion)"], ["effUPSeco", "UPS (eco mode)"], ["effShelf", "Rack power shelf (AC)"], ["effSST", "Solid-state transformer (800 V DC)"], ["effRackDC", "800 V to rack converter (not yet confirmed)"]];
+  var state = Object.assign({}, D, { topology: "rack", metal: "cu", unit: "ft" });
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n, d) { return n.toLocaleString("en-US", { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
+  var money = function (n) { return n == null ? "—" : "$" + fmt(Math.round(n)); };
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+
+  // A broken calculation is never shown: the hand-worked checks run first.
+  var fails = R.selfCheck();
+  if (fails.length) {
+    $("broken").hidden = false;
+    $("broken").textContent = "This calculator failed its own checks, so it shows no results. " + fails.join("; ");
+    document.querySelector(".grid").hidden = true;
+    return;
+  }
+
+  // Inputs from a shared link.
+  try {
+    var shared = new URLSearchParams(location.hash.slice(1));
+    shared.forEach(function (v, k) {
+      if (k in state) state[k] = typeof D[k] === "number" ? Number(v) : typeof D[k] === "boolean" ? v === "1" : v;
+    });
+  } catch (e) { /* a bad link just keeps the defaults */ }
+
+  function fieldsHtml() {
+    var metal = '<div class="field"><label for="metal">Conductor</label><select id="metal"><option value="cu">Copper</option><option value="al">Aluminum</option></select></div>';
+    var unit = '<div class="field"><label for="unit">Length in</label><select id="unit"><option value="ft">Feet</option><option value="m">Meters</option></select></div>';
+    return FIELDS.map(function (f) {
+      var shown = f[0] === "runFt" && state.unit === "m" ? Math.round(state.runFt * 0.3048 * 10) / 10 : Math.round(state[f[0]] * f[3] * 1000) / 1000;
+      var unitLabel = f[0] === "runFt" ? state.unit : f[2];
+      return '<div class="field"><label for="f-' + f[0] + '">' + f[1] + (unitLabel ? " (" + unitLabel + ")" : "") + (f[6] ? "<small>" + f[6] + "</small>" : "") + '</label><input id="f-' + f[0] + '" type="number" inputmode="decimal" step="any" min="' + f[4] + '" max="' + f[5] + '" value="' + shown + '"></div>';
+    }).join("") + metal + unit;
+  }
+  function effsHtml() {
+    return EFFS.map(function (e) { return '<div class="field"><label for="e-' + e[0] + '">' + e[1] + ' (%)</label><input id="e-' + e[0] + '" type="number" inputmode="decimal" step="any" min="50" max="100" value="' + Math.round(state[e[0]] * 1000) / 10 + '"></div>'; }).join("");
+  }
+  function drawInputs() {
+    $("fields").innerHTML = fieldsHtml();
+    $("effs").innerHTML = effsHtml();
+    $("metal").value = state.metal; $("unit").value = state.unit;
+    $("neutral").checked = state.neutral; $("ecoUPS").checked = state.ecoUPS;
+    document.querySelectorAll("[data-topology]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.topology === state.topology)); });
+  }
+
+  function card(r, best) {
+    if (r.error) return '<section class="panel card"><h3>' + esc(r.opt.name) + '</h3><p class="alert">' + esc(r.error) + "</p></section>";
+    var f = r.feeder, win = r.opt.id === best;
+    var wire = (f.sets > 1 ? f.sets + " sets of " : "") + f.label + (state.metal === "cu" ? " Cu" : " Al");
+    var lenUnit = state.unit === "m" ? " m" : " ft";
+    return '<section class="panel card' + (win ? " win" : "") + '" aria-label="' + esc(r.opt.name) + '">' +
+      (win ? '<span class="badge">Lowest ' + state.years + '-year total</span>' : "") +
+      "<h3>" + esc(r.opt.name) + "</h3>" +
+      '<div class="eyebrow">' + state.years + "-year cost of losses (row)</div>" +
+      '<div class="big">' + money(r.lossCostPeriod) + "</div>" +
+      row("Current per " + (state.topology === "row" ? "feeder" : "rack"), fmt(r.current, 1) + " A") +
+      row("Wire", wire) +
+      row("Breaker", fmt(f.ocpd) + " A") +
+      row("Ground wire", f.egc + (/^\d{3,4}$/.test(f.egc) ? " kcmil" : f.egc.indexOf("/") > 0 ? "" : " AWG") + (f.sets > 1 ? " per set" : "")) +
+      (r.busway ? row("Busway option", fmt(r.busway) + " A rating") : "") +
+      row((state.metal === "cu" ? "Copper" : "Aluminum") + " (row)", fmt(r.kgRow) + " kg") +
+      row("Metal cost (row)", money(r.metalCost)) +
+      row("Voltage drop, full load", fmt(r.vdPct, 2) + "%", r.vdOverGuidance) +
+      row("Wire heat, average load", fmt(r.heatW) + " W") +
+      row("Conversion loss", fmt(r.convW / 1000, 1) + " kW (" + fmt(r.eff * 100, 1) + "% efficient)") +
+      row("Cost of losses per year", money(r.lossCostYear)) +
+      row(state.years + "-year total (losses + metal)", money(r.total)) +
+      (r.vdOverGuidance ? '<p class="alert">Voltage drop is over the 3% feeder guidance. Consider a larger wire or a shorter run. (Guidance, not a code limit.)</p>' : "") +
+      '<span class="note">Run ' + fmt(state.unit === "m" ? state.runFt * 0.3048 : state.runFt, 0) + lenUnit + " one way</span>" +
+      "</section>";
+  }
+  function row(k, v, bad) { return '<div class="row' + (bad ? " bad" : "") + '"><span>' + esc(k) + "</span><b>" + esc(v) + "</b></div>"; }
+
+  function render() {
+    var c = R.compare(state, state.topology);
+    $("cards").innerHTML = c.results.map(function (r) { return card(r, c.best); }).join("");
+    var ok = c.results.filter(function (r) { return !r.error; }).sort(function (a, b) { return a.total - b.total; });
+    if (ok.length >= 2) {
+      var w = ok[0], n = ok[1];
+      var convGap = (n.convW - w.convW) / 1000, saved = n.total - w.total;
+      $("why").innerHTML = "<b>Why " + esc(w.opt.name) + " wins:</b> over " + state.years + " years it costs " + money(saved) + " less than " + esc(n.opt.name) + " for this row." +
+        (convGap > 0.05 ? " Most of that is conversion: it wastes " + fmt(convGap, 1) + " kW less in power equipment, which matters far more than the wire." : " The difference here comes mostly from the wire and its metal.");
+    } else $("why").textContent = "";
+    $("hall").innerHTML = ok.length ? "<table><thead><tr><th>Option</th><th>Rows</th><th>" + (state.metal === "cu" ? "Copper" : "Aluminum") + "</th><th>" + state.years + "-year total</th></tr></thead><tbody>" +
+      c.results.filter(function (r) { return !r.error; }).map(function (r) { return "<tr><td>" + esc(r.opt.name) + "</td><td>" + fmt(r.rows, 1) + "</td><td>" + fmt(r.kgHall / 1000, 1) + " t</td><td>" + money(r.totalHall) + "</td></tr>"; }).join("") + "</tbody></table>" : "";
+    var link = LINKEDIN_URL;
+    ["off", "check"].forEach(function (id) { $(id).hidden = !link; if (link) $(id).href = link; });
+  }
+
+  function readInputs() {
+    FIELDS.forEach(function (f) {
+      var v = Number($("f-" + f[0]).value);
+      if (!isFinite(v)) return;
+      if (f[0] === "runFt" && state.unit === "m") v = v / 0.3048; else v = v / f[3];
+      var lo = f[4] / (f[3] || 1), hi = f[5] / (f[3] || 1);
+      if (f[0] === "runFt" && state.unit === "m") { lo = f[4]; hi = f[5]; }
+      state[f[0]] = Math.min(Math.max(v, f[0] === "avgLoad" ? 0.01 : lo), hi);
+    });
+    EFFS.forEach(function (e) { var v = Number($("e-" + e[0]).value); if (isFinite(v) && v >= 50 && v <= 100) state[e[0]] = v / 100; });
+    state.metal = $("metal").value; state.neutral = $("neutral").checked; state.ecoUPS = $("ecoUPS").checked;
+    var unit = $("unit").value;
+    if (unit !== state.unit) { state.unit = unit; drawInputs(); }
+    render();
+  }
+  function linkFor() {
+    var p = new URLSearchParams();
+    Object.keys(state).forEach(function (k) { p.set(k, typeof state[k] === "boolean" ? (state[k] ? "1" : "0") : String(state[k])); });
+    return location.origin + location.pathname + "#" + p.toString();
+  }
+  function say(t) { $("status").textContent = t; }
+
+  // Saved on this device only (this browser), never sent anywhere.
+  var KEY = "rowPowerCompare.saved";
+  function loadSaved() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } }
+  function storeSaved(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); return true; } catch (e) { return false; } }
+  function drawSaved() {
+    var list = loadSaved();
+    $("savedBox").hidden = list.length === 0;
+    $("saved").innerHTML = list.map(function (s, i) {
+      return "<li><span>" + esc(s.name) + '</span><span class="actions"><button class="btn" data-open="' + i + '" type="button">Open</button><button class="btn" data-del="' + i + '" type="button">Delete</button></span></li>';
+    }).join("");
+  }
+
+  document.addEventListener("input", function (e) { if (e.target.closest("#fields, #effs") || e.target.id === "neutral" || e.target.id === "ecoUPS") readInputs(); });
+  document.addEventListener("change", function (e) { if (e.target.id === "metal" || e.target.id === "unit") readInputs(); });
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.topology) { state.topology = t.dataset.topology; drawInputs(); render(); }
+    if (t.id === "copy") {
+      var url = linkFor();
+      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { say("Link copied. Anyone with it sees this exact comparison."); }, function () { prompt("Copy this link:", url); });
+    }
+    if (t.id === "save") {
+      var name = state.rackKW + " kW × " + state.racksPerRow + " racks, " + Math.round(state.runFt) + " ft, " + (state.topology === "row" ? "shared feeder" : "per rack") + " · " + new Date().toLocaleDateString();
+      var list = loadSaved(); list.unshift({ name: name, link: linkFor() });
+      say(storeSaved(list.slice(0, 20)) ? "Saved on this device." : "This browser doesn't allow saving here. Use Copy link instead.");
+      drawSaved();
+    }
+    if (t.dataset.open) { location.href = loadSaved()[Number(t.dataset.open)].link; location.reload(); }
+    if (t.dataset.del) { var l = loadSaved(); l.splice(Number(t.dataset.del), 1); storeSaved(l); drawSaved(); }
+    if (t.id === "theme") {
+      var dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = dark ? "light" : "dark";
+    }
+  });
+
+  drawInputs(); render(); drawSaved();
+})();
+</script>
+</body>
+</html>
